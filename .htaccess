@@ -1,0 +1,11 @@
+# BOARD POINT — Configurações de segurança do Apache
+
+# Desabilita a listagem de arquivos quando alguém acessa uma pasta
+# diretamente (ex: /produtos/ ou /admin/api/) sem um index.html/php ali.
+Options -Indexes
+
+# Impede acesso direto a arquivos de configuração sensíveis, se alguém
+# tentar acessá-los pela URL diretamente.
+<FilesMatch "\.(sql|md|env)$">
+  Require all denied
+</FilesMatch>

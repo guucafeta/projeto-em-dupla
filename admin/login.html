@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Board Point Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body>
+
+<div class="tela-login">
+  <div class="cartao-login">
+    <div class="marca">BOARD POINT</div>
+    <div class="subtitulo">Painel administrativo</div>
+
+    <div class="mensagem-erro" id="mensagemErro"></div>
+
+    <form id="formLogin">
+      <div class="campo-grupo">
+        <label for="usuario">Usuário</label>
+        <input type="text" id="usuario" name="usuario" class="form-control" autocomplete="username" required>
+      </div>
+      <div class="campo-grupo">
+        <label for="senha">Senha</label>
+        <input type="password" id="senha" name="senha" class="form-control" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="botao-primario btn" id="botaoEntrar">Entrar</button>
+    </form>
+
+    <a href="../index.html" class="link-voltar-site">← Voltar ao site</a>
+  </div>
+</div>
+
+<script>
+const form = document.getElementById('formLogin');
+const mensagemErro = document.getElementById('mensagemErro');
+const botaoEntrar = document.getElementById('botaoEntrar');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  mensagemErro.classList.remove('ativo');
+  botaoEntrar.disabled = true;
+  botaoEntrar.textContent = 'Entrando...';
+
+  const usuario = document.getElementById('usuario').value.trim();
+  const senha = document.getElementById('senha').value;
+
+  try {
+    const resp = await fetch('api/auth.php?acao=login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario, senha })
+    });
+    const data = await resp.json();
+
+    if (data.sucesso) {
+      window.location.href = 'pages/dashboard.html';
+    } else {
+      mensagemErro.textContent = data.erro || 'Erro ao entrar.';
+      mensagemErro.classList.add('ativo');
+    }
+  } catch (err) {
+    mensagemErro.textContent = 'Não foi possível conectar ao servidor.';
+    mensagemErro.classList.add('ativo');
+  } finally {
+    botaoEntrar.disabled = false;
+    botaoEntrar.textContent = 'Entrar';
+  }
+});
+
+// Se já estiver logado, pula direto pro dashboard
+fetch('api/auth.php?acao=status')
+  .then(r => r.json())
+  .then(data => {
+    if (data.sucesso && data.dados.autenticado) {
+      window.location.href = 'pages/dashboard.html';
+    }
+  })
+  .catch(() => {});
+</script>
+
+</body>
+</html>

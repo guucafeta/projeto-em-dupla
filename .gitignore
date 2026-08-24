@@ -1,0 +1,14 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+
+# Node (caso instale algo futuramente)
+node_modules/
+
+# Fotos enviadas pelo painel admin em testes locais (opcional — remova
+# esta linha se quiser versionar as imagens de teste que você já subiu)
+produtos/uploads/*
+!produtos/uploads/.manter-pasta
