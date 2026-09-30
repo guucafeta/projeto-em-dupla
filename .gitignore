@@ -12,3 +12,7 @@ node_modules/
 # esta linha se quiser versionar as imagens de teste que você já subiu)
 produtos/uploads/*
 !produtos/uploads/.manter-pasta
+
+# Docker / configuração local
+.env
+admin/api/config_local.php

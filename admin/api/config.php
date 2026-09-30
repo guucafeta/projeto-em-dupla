@@ -3,15 +3,33 @@
  * BOARD POINT — Configuração central da API
  * Conexão PDO com o banco, sessão de admin, helpers de resposta.
  *
- * IMPORTANTE: estas credenciais são o padrão do XAMPP (root sem senha,
- * via localhost). Se você usar outra configuração de MySQL, ajuste aqui.
+ * Cada configuração é lida nesta ordem de prioridade:
+ *   1. variável de ambiente  (Docker: vem do docker-compose / .env)
+ *   2. config_local.php      (XAMPP: copie config_local.example.php; fica fora do Git)
+ *   3. valor padrão do XAMPP (root sem senha, via 127.0.0.1)
  */
 
+// Lê uma configuração. O padrão só vale se não houver env nem config_local.php.
+// (getenv() devolve false quando a variável não existe; string vazia é valor válido,
+// por exemplo a senha vazia do XAMPP.)
+function configValor(string $nome, string $padrao = ''): string
+{
+    static $local = null;
+    if ($local === null) {
+        $arquivo = __DIR__ . '/config_local.php';
+        $local = is_file($arquivo) ? (array) require $arquivo : [];
+    }
+    $env = getenv($nome);
+    if ($env !== false) return $env;
+    if (array_key_exists($nome, $local)) return (string) $local[$nome];
+    return $padrao;
+}
+
 // --- Configuração do banco ---------------------------------------------------
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'boardpoint');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_HOST', configValor('DB_HOST', '127.0.0.1'));
+define('DB_NAME', configValor('DB_NAME', 'boardpoint'));
+define('DB_USER', configValor('DB_USER', 'root'));
+define('DB_PASS', configValor('DB_PASS', ''));
 define('DB_CHARSET', 'utf8mb4');
 
 // --- Sessão -------------------------------------------------------------------

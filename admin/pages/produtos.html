@@ -140,7 +140,7 @@ function renderizarTabela() {
     const badgeClasse = p.estoque === 0 ? 'badge-estoque zero' : 'badge-estoque';
     return `
       <tr>
-        <td><img class="miniatura" src="../${p.imagem}" alt="${p.nome}" onerror="this.style.opacity=0.2"></td>
+        <td><img class="miniatura" src="../../${p.imagem}" alt="${p.nome}" onerror="this.style.opacity=0.2"></td>
         <td>${p.nome}</td>
         <td>${p.categoria_nome}</td>
         <td>${precoFmt ? `<span class="tag-preco">${precoFmt}</span>` : '<span class="tag-consulta">Consulte o valor</span>'}</td>
@@ -205,7 +205,7 @@ window.abrirEdicao = function (id) {
   document.getElementById('imagemObrigatoria').style.display = 'none';
 
   const preview = document.getElementById('previewImagem');
-  preview.src = '../' + p.imagem;
+  preview.src = '../../' + p.imagem;
   preview.classList.add('ativo');
 
   abrirModal('Editar produto');

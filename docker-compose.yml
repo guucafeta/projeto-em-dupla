@@ -1,0 +1,91 @@
+
+
+name: boardpoint
+
+services:
+ 
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASS}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASS}
+    volumes:
+      - db_data:/var/lib/mysql                                    # PERSISTÊNCIA
+      - ./database/boardpoint_completo.sql:/docker-entrypoint-initdb.d/01-boardpoint.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - rede_db
+   
+  backend:
+    build:
+      context: ./docker/backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      PIX_CHAVE: ${PIX_CHAVE}
+      PIX_NOME_RECEBEDOR: ${PIX_NOME_RECEBEDOR:-BOARD POINT}
+      PIX_CIDADE: ${PIX_CIDADE:-CAMPO MOURAO}
+    volumes:
+      - ./admin/api:/var/www/html/admin/api:ro
+      - uploads:/var/www/html/produtos/uploads                    # fotos enviadas pelo admin
+    networks:
+      - rede_backend
+      - rede_db
+
+ 
+  frontend:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./docker/frontend/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./css:/usr/share/nginx/html/css:ro
+      - ./js:/usr/share/nginx/html/js:ro
+      - ./assets:/usr/share/nginx/html/assets:ro
+      - ./produtos:/usr/share/nginx/html/produtos:ro
+      - uploads:/usr/share/nginx/html/produtos/uploads:ro         # mesmas fotos do backend
+      - ./admin/login.html:/usr/share/nginx/html/admin/login.html:ro
+      - ./admin/pages:/usr/share/nginx/html/admin/pages:ro
+      - ./admin/assets:/usr/share/nginx/html/admin/assets:ro
+    networks:
+      - rede_frontend
+
+  
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - rede_frontend
+      - rede_backend
+
+
+networks:
+  rede_frontend:
+  rede_backend:
+  rede_db:
+    internal: true
+
+volumes:
+  db_data:
+  uploads:

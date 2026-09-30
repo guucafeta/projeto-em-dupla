@@ -44,6 +44,44 @@ Se aparecer algum erro de "banco já existe", é porque você já importou antes
 
 ---
 
+## Rodando com Docker (alternativa ao XAMPP)
+
+Requisitos: Docker Desktop (ou Docker Engine + Compose v2).
+
+```bash
+cp .env.example .env        # edite: senhas do banco e PIX_CHAVE
+docker compose up --build -d
+```
+
+Acesse `http://localhost:8080` (site) e `http://localhost:8080/admin/login.html` (painel).
+Na primeira subida o MariaDB importa `database/boardpoint_completo.sql` sozinho.
+
+**Serviços:** `db` (MariaDB) · `backend` (PHP/Apache, API em `admin/api`) · `frontend` (estáticos) · `nginx` (proxy reverso, único com porta publicada).
+
+**Redes:** `rede_frontend` (nginx ↔ frontend), `rede_backend` (nginx ↔ backend) e `rede_db` (backend ↔ db, marcada como `internal`, sem internet nem acesso do host).
+
+**Volumes:** `db_data` guarda o banco e `uploads` guarda as fotos enviadas pelo admin.
+
+### Testar a persistência
+
+```bash
+docker compose exec db mariadb -uroot -p"$DB_ROOT_PASS" boardpoint -e "SELECT COUNT(*) FROM produtos"
+docker compose down                 # SEM -v
+docker compose up -d
+docker compose exec db mariadb -uroot -p"$DB_ROOT_PASS" boardpoint -e "SELECT COUNT(*) FROM produtos"
+```
+
+O número deve ser o mesmo. `docker compose down -v` apaga os volumes (banco e fotos).
+
+### Chave PIX
+
+- **Docker:** `PIX_CHAVE` no `.env`.
+- **XAMPP:** copie `admin/api/config_local.example.php` para `config_local.php` e preencha (o arquivo não vai para o Git).
+
+Sem chave configurada o checkout responde "PIX indisponível".
+
+---
+
 ## O que dá pra fazer no painel
 
 - **Dashboard** — números gerais: total de produtos, categorias, quantos têm preço definido, quantos estão sem estoque, e quantos produtos tem em cada categoria.
@@ -72,18 +110,43 @@ O jeito mais simples é gerar um novo hash de senha e atualizar direto no phpMyA
 
 ```
 boardpoint/
-├── index.html              → site público
+├── index.html               → site público (carrega js/main.js como módulo ES)
 ├── css/style.css
-├── js/main.js               → agora busca dados da API em vez de produtos.js
-├── ts/main.ts                → fonte TypeScript do site público
-├── ts/dashboard.ts           → fonte TypeScript do dashboard admin
+├── ts/                      → CÓDIGO-FONTE TypeScript (edite aqui)
+│   ├── main.ts              → ponto de entrada do site (só liga as peças)
+│   ├── dashboard.ts         → ponto de entrada do dashboard admin
+│   ├── entidades/           → Produto, Categoria, Carrinho, ItemCarrinho (dados + regras)
+│   ├── repositorios/        → acesso à API e ao localStorage
+│   ├── servicos/            → carrinho, pedido, contato e métricas do dashboard
+│   ├── ui/                  → modais, vitrine, filtros, painel (tudo que mexe no DOM)
+│   ├── excecoes/            → erros próprios (ErroRede, ErroApi, ErroValidacao...)
+│   ├── tipos/               → interfaces e type aliases
+│   └── utilitarios/
+├── js/                      → JavaScript GERADO por `tsc` (não edite; o navegador roda este)
 ├── produtos/                → fotos dos produtos originais + pasta uploads/ (fotos novas do admin)
 └── admin/
     ├── login.html
-    ├── pages/                → dashboard, produtos, categorias
-    ├── assets/                → CSS e JS do painel (dashboard.js é o compilado de ts/dashboard.ts)
-    └── api/                   → PHP: config.php, auth.php, categorias.php, produtos.php, dashboard.php
+    ├── pages/               → dashboard, produtos, categorias, pedidos, contatos
+    ├── assets/              → CSS e JS do painel
+    └── api/                 → PHP: config.php, config_loja.php, auth.php, categorias.php, produtos.php, pedidos.php, dashboard.php
+
+docker-compose.yml           → 4 serviços (db, backend, frontend, nginx)
+docker/                      → Dockerfile do backend e configs do Nginx
+.env.example                 → modelo das variáveis (copie para .env)
 ```
+
+### Recompilar o TypeScript
+
+O `js/` já vem compilado. Só precisa recompilar se alterar algo em `ts/`:
+
+```
+npm install -g typescript
+tsc -p ts
+```
+
+O código usa campos privados nativos (`#campo`, ES2022): funciona em navegadores de 2021 em diante.
+As páginas carregam os scripts como módulos, então precisam ser abertas por um servidor
+(XAMPP ou Docker), nunca clicando duas vezes no arquivo .html.
 
 > O script `boardpoint_completo.sql` (criação do banco) é entregue separado, fora desta pasta — veja a seção "Importar o banco de dados" acima.
 

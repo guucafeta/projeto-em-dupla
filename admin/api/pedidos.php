@@ -19,6 +19,12 @@ require_once __DIR__ . '/GeradorPix.php';
 $metodo = $_SERVER['REQUEST_METHOD'];
 $pdo = getConexao();
 
+// Sem chave PIX configurada o checkout não pode gerar cobrança. Recusa antes
+// de gravar o pedido, para não deixar pedido órfão no banco.
+if ($metodo === 'POST' && PIX_CHAVE === '') {
+    respostaErro('PIX indisponível: a chave PIX da loja ainda não foi configurada.', 503);
+}
+
 function normalizarPedido(array $p): array
 {
     return [
