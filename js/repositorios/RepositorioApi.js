@@ -3,7 +3,6 @@
  * TDto = formato JSON da API; TEntidade = objeto de domínio.
  */
 export class RepositorioApi {
-    cliente;
     constructor(cliente) {
         this.cliente = cliente;
     }
