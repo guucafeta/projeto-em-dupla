@@ -27,8 +27,22 @@ export class ClienteApi implements ClienteHttp {
 
   async #requisitar<T>(caminho: string, opcoes: RequestInit): Promise<T> {
     let resposta: Response;
+
+    // 1. Busca o Token do localStorage
+    const token = localStorage.getItem("bp_jwt_token");
+
+    // 2. Prepara os cabeçalhos incluindo a autenticação Bearer
+    const headers = new Headers(opcoes.headers || {});
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
     try {
-      resposta = await fetch(this.#base + caminho, { credentials: "same-origin", ...opcoes });
+      resposta = await fetch(this.#base + caminho, {
+        credentials: "same-origin",
+        ...opcoes,
+        headers, // Adiciona os cabeçalhos com o JWT
+      });
     } catch {
       throw new ErroRede();
     }
