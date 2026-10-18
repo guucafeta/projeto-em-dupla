@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/validacoes.php';
+require_once __DIR__ . '/config.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -22,15 +23,8 @@ if (empty($nome) || !validarEmail($email) || !validarCPF($cpf) || !validarSenha(
     exit;
 }
 
-$host = getenv('DB_HOST') ?: 'db';
-$db   = getenv('DB_NAME') ?: 'boardpoint';
-$user = getenv('DB_USER') ?: 'boardpoint';
-$pass = getenv('DB_PASS') ?: 'boardpoint_pass';
-
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    $pdo = getConexao();
 
     $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ? OR cpf = ?");
     $stmt->execute([$email, $cpf]);

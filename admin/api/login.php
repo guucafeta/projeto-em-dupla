@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/jwt.php';
+require_once __DIR__ . '/config.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -20,16 +21,10 @@ if (empty($email) || empty($senha)) {
     exit;
 }
 
-$host = getenv('DB_HOST') ?: 'db';
-$db   = getenv('DB_NAME') ?: 'boardpoint';
-$user = getenv('DB_USER') ?: 'boardpoint';
-$pass = getenv('DB_PASS') ?: 'boardpoint_pass';
 $jwtSecret = getenv('JWT_SECRET') ?: 'sua_chave_secreta_padrao';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    $pdo = getConexao();
 
     $stmt = $pdo->prepare("SELECT id, nome, email, senha_hash FROM usuarios WHERE email = ?");
     $stmt->execute([$email]);
@@ -41,13 +36,18 @@ try {
         exit;
     }
 
+    // Cria a sessão que o painel admin usa para saber que você está logado
+    session_regenerate_id(true);
+    $_SESSION['admin_id'] = (int) $usuario['id'];
+    $_SESSION['admin_usuario'] = $usuario['nome'];
+
     $payload = [
         'sub' => $usuario['id'],
         'nome' => $usuario['nome'],
         'email' => $usuario['email'],
         'iat' => time(),
-        'exp' => time() + (3600 * 8) // Token válido por 8 horas
-    ];k
+        'exp' => time() + (3600 * 8)
+    ];
 
     $token = gerarJWT($payload, $jwtSecret);
 
