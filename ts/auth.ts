@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           exibirMensagem('Login realizado com sucesso! Redirecionando...', true);
           setTimeout(() => {
-            window.location.href = '/admin/dashboard.html';
+            window.location.href = '/admin/pages/dashboard.html';
           }, 1000);
         }
       } catch (err) {
