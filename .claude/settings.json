@@ -4,7 +4,7 @@
       "Read(./.env)",
       "Read(./.env.local)",
       "Read(./.env.production)",
-      "Read(./admin/api/config_local.php)",
+      "Read(./back/api/config_local.php)",
       "Edit(./.env)",
       "Bash(docker compose down -v*)",
       "Bash(rm -rf*)",

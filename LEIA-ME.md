@@ -53,10 +53,10 @@ cp .env.example .env        # edite: senhas do banco e PIX_CHAVE
 docker compose up --build -d
 ```
 
-Acesse `http://localhost:8080` (site) e `http://localhost:8080/admin/login.html` (painel).
-Na primeira subida o MariaDB importa `database/boardpoint_completo.sql` sozinho.
+Acesse `http://localhost:8081` (site) e `http://localhost:8081/admin/login.html` (painel).
+Na primeira subida o MariaDB importa `back/database/boardpoint_completo.sql` sozinho.
 
-**Serviços:** `db` (MariaDB) · `backend` (PHP/Apache, API em `admin/api`) · `frontend` (estáticos) · `nginx` (proxy reverso, único com porta publicada).
+**Serviços:** `db` (MariaDB) · `backend` (PHP/Apache, API em`back/api`) · `frontend` (estáticos) · `nginx` (proxy reverso, único com porta publicada).
 
 **Redes:** `rede_frontend` (nginx ↔ frontend), `rede_backend` (nginx ↔ backend) e `rede_db` (backend ↔ db, marcada como `internal`, sem internet nem acesso do host).
 
@@ -76,7 +76,7 @@ O número deve ser o mesmo. `docker compose down -v` apaga os volumes (banco e f
 ### Chave PIX
 
 - **Docker:** `PIX_CHAVE` no `.env`.
-- **XAMPP:** copie `admin/api/config_local.example.php` para `config_local.php` e preencha (o arquivo não vai para o Git).
+- **XAMPP:** copie `back/api/config_local.example.php` para `config_local.php` e preencha (o arquivo não vai para o Git).
 
 Sem chave configurada o checkout responde "PIX indisponível".
 
