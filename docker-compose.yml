@@ -1,9 +1,7 @@
-
-
 name: boardpoint
 
 services:
- 
+
   db:
     image: mariadb:10.11
     restart: unless-stopped
@@ -13,8 +11,9 @@ services:
       MARIADB_USER: ${DB_USER}
       MARIADB_PASSWORD: ${DB_PASS}
     volumes:
-      - db_data:/var/lib/mysql                                    # PERSISTÊNCIA
-      - ./database/boardpoint_completo.sql:/docker-entrypoint-initdb.d/01-boardpoint.sql:ro
+      - db_data:/var/lib/mysql
+      - ./back/database/boardpoint_completo.sql:/docker-entrypoint-initdb.d/01-boardpoint.sql:ro
+      - ./back/database/002_usuarios.sql:/docker-entrypoint-initdb.d/02-usuarios.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
@@ -23,10 +22,10 @@ services:
       start_period: 20s
     networks:
       - rede_db
-   
+
   backend:
     build:
-      context: ./docker/backend
+            context: ./back/docker
     restart: unless-stopped
     depends_on:
       db:
@@ -40,31 +39,29 @@ services:
       PIX_NOME_RECEBEDOR: ${PIX_NOME_RECEBEDOR:-BOARD POINT}
       PIX_CIDADE: ${PIX_CIDADE:-CAMPO MOURAO}
     volumes:
-      - ./admin/api:/var/www/html/admin/api:ro
-      - uploads:/var/www/html/produtos/uploads                    # fotos enviadas pelo admin
+      - ./back/api:/var/www/html/admin/api:ro
+      - uploads:/var/www/html/produtos/uploads
     networks:
       - rede_backend
       - rede_db
 
- 
   frontend:
     image: nginx:1.27-alpine
     restart: unless-stopped
     volumes:
-      - ./docker/frontend/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./index.html:/usr/share/nginx/html/index.html:ro
-      - ./css:/usr/share/nginx/html/css:ro
-      - ./js:/usr/share/nginx/html/js:ro
-      - ./assets:/usr/share/nginx/html/assets:ro
-      - ./produtos:/usr/share/nginx/html/produtos:ro
-      - uploads:/usr/share/nginx/html/produtos/uploads:ro         # mesmas fotos do backend
-      - ./admin/login.html:/usr/share/nginx/html/admin/login.html:ro
-      - ./admin/pages:/usr/share/nginx/html/admin/pages:ro
-      - ./admin/assets:/usr/share/nginx/html/admin/assets:ro
+      - ./front/docker/frontend/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./front/index.html:/usr/share/nginx/html/index.html:ro
+      - ./front/css:/usr/share/nginx/html/css:ro
+      - ./front/js:/usr/share/nginx/html/js:ro
+      - ./front/assets:/usr/share/nginx/html/assets:ro
+      - ./front/produtos:/usr/share/nginx/html/produtos:ro
+      - uploads:/usr/share/nginx/html/produtos/uploads:ro
+      - ./front/admin/login.html:/usr/share/nginx/html/admin/login.html:ro
+      - ./front/admin/pages:/usr/share/nginx/html/admin/pages:ro
+      - ./front/admin/assets:/usr/share/nginx/html/admin/assets:ro
     networks:
       - rede_frontend
 
-  
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
@@ -72,13 +69,12 @@ services:
       - backend
       - frontend
     ports:
-      - "${HTTP_PORT:-8080}:80"
+      - "${HTTP_PORT:-8081}:80"
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - rede_frontend
       - rede_backend
-
 
 networks:
   rede_frontend:

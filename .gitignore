@@ -10,9 +10,12 @@ node_modules/
 
 # Fotos enviadas pelo painel admin em testes locais (opcional — remova
 # esta linha se quiser versionar as imagens de teste que você já subiu)
-produtos/uploads/*
-!produtos/uploads/.manter-pasta
+front/produtos/uploads/*
+!front/produtos/uploads/.manter-pasta
 
 # Docker / configuração local
 .env
-admin/api/config_local.php
+back/api/config_local.php
+
+front/
+back/
