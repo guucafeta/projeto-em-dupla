@@ -1,21 +1,19 @@
-# Sistema
+# Sistema e editor
 .DS_Store
 Thumbs.db
-
-# Editor
 .vscode/
-
-# Node (caso instale algo futuramente)
 node_modules/
 
-# Fotos enviadas pelo painel admin em testes locais (opcional — remova
-# esta linha se quiser versionar as imagens de teste que você já subiu)
+# Uploads locais
 front/produtos/uploads/*
 !front/produtos/uploads/.manter-pasta
 
-# Docker / configuração local
+# Configuração local e credenciais
 .env
+.env.*
+!.env.example
 back/api/config_local.php
 
+# Os frontends/backends são repositórios independentes montados nestas pastas.
 front/
 back/
