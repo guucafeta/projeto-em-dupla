@@ -1,5 +1,7 @@
+---
 name: revisar-seguranca-api
 description: Revisa uma rota PHP do BoardPoint antes do commit (SQL injection, autenticação, segredos, mensagens de erro).
+---
 
 Confira e liste o que falhar:
 1. Alguma query concatena variável? Deve usar 'prepare' + 'execute'.
