@@ -56,6 +56,7 @@ services:
       - ./front/css:/usr/share/nginx/html/css:ro
       - ./front/js:/usr/share/nginx/html/js:ro
       - ./front/assets:/usr/share/nginx/html/assets:ro
+      - ./front/cliente:/usr/share/nginx/html/cliente:ro
       - ./front/produtos:/usr/share/nginx/html/produtos:ro
       - uploads:/usr/share/nginx/html/produtos/uploads:ro
       - ./front/admin/login.html:/usr/share/nginx/html/admin/login.html:ro
