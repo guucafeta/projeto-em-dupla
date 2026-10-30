@@ -1,7 +1,6 @@
 name: boardpoint
 
 services:
-
   db:
     image: mariadb:10.11
     restart: unless-stopped
@@ -26,7 +25,7 @@ services:
 
   backend:
     build:
-            context: ./back/docker
+      context: ./back/docker
     restart: unless-stopped
     depends_on:
       db:
@@ -36,6 +35,7 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
+      JWT_SECRET: ${JWT_SECRET}
       PIX_CHAVE: ${PIX_CHAVE}
       PIX_NOME_RECEBEDOR: ${PIX_NOME_RECEBEDOR:-BOARD POINT}
       PIX_CIDADE: ${PIX_CIDADE:-CAMPO MOURAO}
