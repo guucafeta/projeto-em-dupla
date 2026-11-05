@@ -37,7 +37,7 @@ Se aparecer algum erro de "banco já existe", é porque você já importou antes
 - **Painel admin:** `http://localhost/boardpoint/admin/login.html`
 
 ### Login do admin (padrão)
-- **Usuário:** `admin`
+- **E-mail:** `admin@boardpoint.com` (o login do painel é por e-mail)
 - **Senha:** `admin123`
 
 **Troque essa senha depois de configurar tudo** — veja a seção "Trocar a senha do admin" mais abaixo.
