@@ -2,10 +2,17 @@
   "permissions": {
     "deny": [
       "Read(./.env)",
-      "Read(./.env.local)",
-      "Read(./.env.production)",
+      "Read(./.env.*)",
       "Read(./back/api/config_local.php)",
       "Edit(./.env)",
+      "Edit(./.env.*)",
+      "Bash(cat .env*)",
+      "Bash(cat ./.env*)",
+      "Bash(grep * .env*)",
+      "Bash(head * .env*)",
+      "Bash(tail * .env*)",
+      "Bash(less .env*)",
+      "Bash(cat *config_local.php*)",
       "Bash(docker compose down -v*)",
       "Bash(rm -rf*)",
       "Bash(git push --force*)"
