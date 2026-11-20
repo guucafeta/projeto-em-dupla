@@ -1,62 +1,95 @@
-# Board Point — Guia de instalação (site + painel admin)
+# Board Point — Guia do projeto
 
-Este projeto agora tem duas partes:
+Loja online de skate com três partes, todas no mesmo site:
 
-1. **Site público** (`index.html`) — a vitrine, igual antes, mas agora os produtos vêm do banco de dados em vez de um arquivo fixo.
-2. **Painel administrativo** (`/admin`) — onde você loga e gerencia categorias e produtos (criar, editar, excluir, trocar foto).
+1. **Loja** — vitrine com busca, filtro por categoria, carrinho e checkout por PIX.
+2. **Área do cliente** — cadastro (com CPF), login e edição do perfil.
+3. **Painel admin** — dashboard e CRUDs de categorias, produtos (com foto), pedidos e mensagens de contato.
 
-Como agora existe banco de dados, **não dá mais pra abrir só com duplo-clique**. Precisa rodar via XAMPP.
-
----
-
-## 1. Instalar
-
-1. Baixe e instale o [XAMPP](https://www.apachefriends.org/) (Apache + PHP + MySQL).
-2. Descompacte este zip e copie a pasta `boardpoint` inteira para dentro de:
-   - Windows: `C:\xampp\htdocs\`
-   - Mac: `/Applications/XAMPP/htdocs/`
-3. Abra o **painel de controle do XAMPP** e inicie:
-   - **Apache**
-   - **MySQL**
-
-## 2. Importar o banco de dados
-
-O script `boardpoint_completo.sql` fica fora da pasta do site (não vai dentro de `htdocs/boardpoint`), já que ele só precisa ser executado uma vez, na instalação — o site nunca lê esse arquivo em produção.
-
-1. No painel do XAMPP, clique em **Admin** ao lado do MySQL (abre o phpMyAdmin no navegador).
-2. Clique em **Importar** no menu de cima.
-3. Clique em **Escolher arquivo** e selecione o `boardpoint_completo.sql` que veio junto (fora da pasta `boardpoint`).
-4. Clique em **Executar** lá embaixo.
-5. Pronto — isso cria o banco `boardpoint` já com as tabelas, os 33 produtos originais, e o usuário de login do admin.
-
-Se aparecer algum erro de "banco já existe", é porque você já importou antes — pode ignorar ou apagar o banco `boardpoint` no phpMyAdmin e importar de novo.
-
-## 3. Acessar
-
-- **Site público:** `http://localhost/boardpoint/`
-- **Painel admin:** `http://localhost/boardpoint/admin/login.html`
-
-### Login do admin (padrão)
-- **E-mail:** `admin@boardpoint.com` (o login do painel é por e-mail)
-- **Senha:** `admin123`
-
-**Troque essa senha depois de configurar tudo** — veja a seção "Trocar a senha do admin" mais abaixo.
+O front-end é uma SPA em **React + TypeScript (Vite)**. O back-end é uma API em **PHP 8.2** com **MariaDB**. Tudo roda com **Docker**.
 
 ---
 
-## Rodando com Docker (alternativa ao XAMPP)
+## 1. Subir o projeto
 
-Requisitos: Docker Desktop (ou Docker Engine + Compose v2).
+Requisitos: Docker Engine + Docker Compose v2 (ou Docker Desktop).
 
 ```bash
-cp .env.example .env        # edite: senhas do banco e PIX_CHAVE
+cp .env.example .env
+```
+
+Edite o `.env` e preencha pelo menos:
+
+| Variável | Para quê |
+|---|---|
+| `DB_PASS`, `DB_ROOT_PASS` | Senhas do banco (escolha qualquer uma) |
+| `JWT_SECRET` | **Obrigatória.** Sem ela, todo login (cliente e admin) dá erro 500. Gere uma com `openssl rand -hex 32` |
+| `PIX_CHAVE` | Chave PIX do checkout. Sem ela, o checkout responde "PIX indisponível" |
+| `GEMINI_API_KEY` | Opcional. Sugestão de senha no cadastro por IA; sem ela, a senha é gerada localmente |
+| `HTTP_PORT` | Porta do site (padrão `8081`) |
+
+Depois:
+
+```bash
 docker compose up --build -d
 ```
 
-Acesse `http://localhost:8081` (site) e `http://localhost:8081/admin/login.html` (painel).
-Na primeira subida o MariaDB importa `back/database/boardpoint_completo.sql` sozinho.
+Na primeira subida, o MariaDB importa sozinho os scripts de `back/database/`.
 
-**Serviços:** `db` (MariaDB) · `backend` (PHP/Apache, API em`back/api`) · `frontend` (estáticos) · `nginx` (proxy reverso, único com porta publicada).
+## 2. Acessar
+
+- **Loja:** `http://localhost:8081/`
+- **Cliente:** `http://localhost:8081/cliente/login` e `/cliente/cadastro`
+- **Painel admin:** `http://localhost:8081/admin/login`
+
+### Login do admin (padrão de desenvolvimento)
+- **E-mail:** `admin@boardpoint.com`
+- **Senha:** `admin123`
+
+Troque essa senha antes de publicar o site (veja "Trocar a senha do admin").
+
+> Se uma tela antiga aparecer depois de atualizar, recarregue com **Ctrl + Shift + R** (limpa o cache do navegador).
+
+---
+
+## 3. Desenvolver o front-end
+
+Com o Docker no ar (ele fornece a API e as fotos):
+
+```bash
+cd front/app
+npm install
+npm run dev
+```
+
+Abra `http://localhost:5173`. O Vite recarrega a tela a cada arquivo salvo e repassa `/admin/api`, `/produtos` e `/assets` para o Docker na porta 8081.
+
+Outros comandos (dentro de `front/app`):
+
+| Comando | O que faz |
+|---|---|
+| `npm test` | Roda os testes automatizados (Vitest) |
+| `npm run typecheck` | Confere os tipos do TypeScript |
+| `npm run lint` | Confere o código com ESLint |
+| `npm run build` | Gera a versão de produção em `dist/` |
+
+O container `frontend` usa uma imagem com o build pronto. Então, depois de mudar o front, reconstrua para ver a mudança na porta 8081:
+
+```bash
+docker compose up --build -d frontend
+```
+
+O back-end (`back/api`) entra no container por volume: mudanças no PHP valem na hora, sem reconstruir.
+
+---
+
+## 4. Como o Docker está montado
+
+**Serviços:**
+- `db` — MariaDB
+- `backend` — PHP/Apache com a API (`back/api`)
+- `frontend` — Nginx servindo o build do React, mais as fotos do site e dos produtos
+- `nginx` — proxy reverso, o único com porta publicada. Manda `/admin/api/` para o `backend` e todo o resto para o `frontend`
 
 **Redes:** `rede_frontend` (nginx ↔ frontend), `rede_backend` (nginx ↔ backend) e `rede_db` (backend ↔ db, marcada como `internal`, sem internet nem acesso do host).
 
@@ -65,94 +98,76 @@ Na primeira subida o MariaDB importa `back/database/boardpoint_completo.sql` soz
 ### Testar a persistência
 
 ```bash
-docker compose exec db mariadb -uroot -p"$DB_ROOT_PASS" boardpoint -e "SELECT COUNT(*) FROM produtos"
+docker compose exec db mariadb -uroot -p boardpoint -e "SELECT COUNT(*) FROM produtos"
 docker compose down                 # SEM -v
 docker compose up -d
-docker compose exec db mariadb -uroot -p"$DB_ROOT_PASS" boardpoint -e "SELECT COUNT(*) FROM produtos"
+docker compose exec db mariadb -uroot -p boardpoint -e "SELECT COUNT(*) FROM produtos"
 ```
 
-O número deve ser o mesmo. `docker compose down -v` apaga os volumes (banco e fotos).
-
-### Chave PIX
-
-- **Docker:** `PIX_CHAVE` no `.env`.
-- **XAMPP:** copie `back/api/config_local.example.php` para `config_local.php` e preencha (o arquivo não vai para o Git).
-
-Sem chave configurada o checkout responde "PIX indisponível".
+(Ele pede a `DB_ROOT_PASS` do seu `.env`.) O número deve ser o mesmo nas duas vezes. Cuidado: `docker compose down -v` apaga os volumes, ou seja, o banco e as fotos.
 
 ---
 
-## O que dá pra fazer no painel
+## 5. O que dá para fazer no painel
 
-- **Dashboard** — números gerais: total de produtos, categorias, quantos têm preço definido, quantos estão sem estoque, e quantos produtos tem em cada categoria.
-- **Categorias** — criar, editar (nome/slug) e excluir. Você não consegue excluir uma categoria que ainda tem produtos dentro — precisa mover ou excluir os produtos primeiro.
-- **Produtos** — criar, editar e excluir. Tem busca (funciona sem acento, ex: digitar "tenis" acha "Tênis") e filtro por categoria. Ao criar/editar você escolhe a categoria, nome, preço (deixe vazio pra aparecer "Consulte o valor" no site), estoque e a foto.
+- **Dashboard** — total de produtos e categorias, produtos com preço e sem estoque, faturamento potencial, preço médio, destaques, produtos por categoria e estoque crítico.
+- **Categorias** — criar, editar (nome e slug) e excluir. Uma categoria com produtos não pode ser excluída.
+- **Produtos** — criar, editar e excluir, com foto. Busca sem acento (digitar "tenis" acha "Tênis") e filtro por categoria. Preço vazio aparece como "Consulte o valor" na loja.
+- **Pedidos** — criar pedido com vários itens, confirmar pagamento (abate o estoque), cancelar, editar dados do cliente e excluir.
+- **Mensagens** — ver os contatos enviados pela loja, marcar como lida, editar e excluir.
 
-Toda alteração feita no admin aparece na hora no site público, porque os dois usam o mesmo banco de dados.
+Tudo o que muda no painel aparece na hora na loja, porque os dois usam o mesmo banco.
 
 ---
 
-## Trocar a senha do admin
+## 6. Trocar a senha do admin
 
-O jeito mais simples é gerar um novo hash de senha e atualizar direto no phpMyAdmin:
-
-1. Crie um arquivo temporário `gerar_senha.php` em qualquer lugar dentro de `htdocs` com este conteúdo:
-   ```php
-   <?php echo password_hash('SUA_NOVA_SENHA_AQUI', PASSWORD_BCRYPT);
+1. Gere o hash da nova senha pelo próprio container do back-end:
+   ```bash
+   docker compose exec backend php -r "echo password_hash('SUA_NOVA_SENHA', PASSWORD_BCRYPT), PHP_EOL;"
    ```
-2. Acesse `http://localhost/gerar_senha.php` no navegador — ele mostra um hash tipo `$2y$10$...`.
-3. No phpMyAdmin, abra o banco `boardpoint` → tabela `admins` → edite a linha do usuário `admin` → cole o hash gerado no campo `senha_hash`.
-4. Apague o arquivo `gerar_senha.php` depois de usar.
+2. Grave o hash no banco (troque `HASH_GERADO` pelo resultado acima). Mantenha as **aspas simples por fora**: o hash tem `$`, e com aspas duplas por fora o terminal estragaria o valor.
+   ```bash
+   docker compose exec db mariadb -uroot -p boardpoint -e 'UPDATE admins SET senha_hash = "HASH_GERADO" WHERE email = "admin@boardpoint.com"'
+   ```
 
 ---
 
-## Estrutura do projeto
+## 7. Estrutura do projeto
 
 ```
 boardpoint/
-├── index.html               → site público (carrega js/main.js como módulo ES)
-├── css/style.css
-├── ts/                      → CÓDIGO-FONTE TypeScript (edite aqui)
-│   ├── main.ts              → ponto de entrada do site (só liga as peças)
-│   ├── dashboard.ts         → ponto de entrada do dashboard admin
-│   ├── entidades/           → Produto, Categoria, Carrinho, ItemCarrinho (dados + regras)
-│   ├── repositorios/        → acesso à API e ao localStorage
-│   ├── servicos/            → carrinho, pedido, contato e métricas do dashboard
-│   ├── ui/                  → modais, vitrine, filtros, painel (tudo que mexe no DOM)
-│   ├── excecoes/            → erros próprios (ErroRede, ErroApi, ErroValidacao...)
-│   ├── tipos/               → interfaces e type aliases
-│   └── utilitarios/
-├── js/                      → JavaScript GERADO por `tsc` (não edite; o navegador roda este)
-├── produtos/                → fotos dos produtos originais + pasta uploads/ (fotos novas do admin)
-└── admin/
-    ├── login.html
-    ├── pages/               → dashboard, produtos, categorias, pedidos, contatos
-    ├── assets/              → CSS e JS do painel
-    └── api/                 → PHP: config.php, config_loja.php, auth.php, categorias.php, produtos.php, pedidos.php, dashboard.php
-
-docker-compose.yml           → 4 serviços (db, backend, frontend, nginx)
-docker/                      → Dockerfile do backend e configs do Nginx
-.env.example                 → modelo das variáveis (copie para .env)
+├── docker-compose.yml        → os 4 serviços, redes e volumes
+├── .env.example              → modelo das variáveis (copie para .env, que não vai para o Git)
+├── docker/nginx/             → config do proxy reverso
+├── AGENTS.md                 → regras para agentes de IA (Claude Code)
+├── .claude/skills/           → skills usadas pelos agentes
+├── back/
+│   ├── api/                  → API PHP (auth, clientes, categorias, produtos, pedidos, contato, dashboard...)
+│   ├── database/             → scripts SQL importados na primeira subida
+│   └── docker/               → Dockerfile do back-end
+└── front/
+    ├── app/                  → SPA React (código-fonte)
+    │   ├── Dockerfile        → build com Node + Nginx servindo o resultado
+    │   ├── docker/           → config do Nginx do front
+    │   └── src/
+    │       ├── paginas/      → telas da loja e do cliente (paginas/admin: telas do painel)
+    │       ├── componentes/  → peças de tela (loja, conta, admin)
+    │       ├── hooks/        → lógica reaproveitável de React
+    │       ├── dominio/      → regras, serviços, validações e acesso à API (sem React)
+    │       ├── infra/        → instâncias únicas dos serviços
+    │       └── estilos/      → CSS
+    ├── assets/               → fotos e vídeo do site
+    └── produtos/             → fotos dos produtos (uploads/: fotos enviadas pelo admin)
 ```
 
-### Recompilar o TypeScript
-
-O `js/` já vem compilado. Só precisa recompilar se alterar algo em `ts/`:
-
-```
-npm install -g typescript
-tsc -p ts
-```
-
-O código usa campos privados nativos (`#campo`, ES2022): funciona em navegadores de 2021 em diante.
-As páginas carregam os scripts como módulos, então precisam ser abertas por um servidor
-(XAMPP ou Docker), nunca clicando duas vezes no arquivo .html.
-
-> O script `boardpoint_completo.sql` (criação do banco) é entregue separado, fora desta pasta — veja a seção "Importar o banco de dados" acima.
+---
 
 ## Se algo der errado
 
-- **"Falha na conexão com o banco de dados"** → confira se o MySQL está rodando no painel do XAMPP, e se o banco `boardpoint` foi importado.
-- **Login não funciona** → confirme que importou o `boardpoint_completo.sql` (ele já cria o usuário `admin`/`admin123`). Se você mudou a senha e esqueceu, repita o passo "Trocar a senha do admin".
-- **Imagem não aparece depois de trocar no admin** → o arquivo é salvo em `produtos/uploads/`; confira se essa pasta tem permissão de escrita (no XAMPP local normalmente já vem liberado).
-- **Busca/filtro não funciona ao abrir com duplo clique no index.html** → isso é esperado, precisa acessar via `http://localhost/...` (servidor rodando), não abrindo o arquivo direto no navegador.
+- **Login dá erro (cliente ou admin)** → confira se o `JWT_SECRET` está preenchido no `.env` e rode `docker compose up -d` de novo.
+- **"Falha na conexão com o banco de dados"** → veja se o `db` subiu: `docker compose ps` e `docker compose logs db`.
+- **Tela antiga ou "Página não encontrada" depois de atualizar** → recarregue com **Ctrl + Shift + R**.
+- **Mudei o front e nada mudou na porta 8081** → reconstrua: `docker compose up --build -d frontend`.
+- **Foto não aparece depois de trocar no admin** → as fotos novas ficam no volume `uploads`; veja se o upload deu certo pelo aviso no canto da tela.
+- **Quero começar o banco do zero** → `docker compose down -v` e `docker compose up -d`. Isso apaga todos os dados e fotos enviadas.
