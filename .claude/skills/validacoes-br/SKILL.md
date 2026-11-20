@@ -15,7 +15,7 @@ Use esta skill ao criar ou alterar validação de CPF, e-mail ou senha.
 
 ## Onde ficam (altere os dois juntos)
 - PHP: `back/api/validacoes.php` (`validarCPF`, `validarEmail`, `validarSenha`).
-- TypeScript: `front/ts/cliente/validacoes.ts` (`validarCpf`, `validarEmail`, `validarSenha`).
+- TypeScript: `front/app/src/dominio/utilitarios/validacoesConta.ts` (`validarCpf`, `validarEmail`, `validarSenha`), com testes em `validacoesConta.test.ts` (rode `npm test` em `front/app`).
 
 ## Conferência obrigatória
 Teste ao menos: `529.982.247-25` (válido), `529.982.247-24` (dígito errado), `111.111.111-11` (repetido) e `123` (curto).
